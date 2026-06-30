@@ -26,6 +26,8 @@
   .wro-title h1{font-size:clamp(13px,3.5vw,20px);font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wro-title .subtitle{font-size:10px;color:var(--accent3);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem;flex-shrink:0;}
+  .sync-badge{font-size:10px;color:var(--text3);white-space:nowrap;}
+  .sync-mobile{display:none;}
   @media(max-width:480px){
     .hero-inner{justify-content:space-between;}
     .wro-title{order:2;flex-basis:100%;min-width:0;margin-top:0.4rem;}
@@ -33,9 +35,9 @@
     .wro-title .subtitle{white-space:normal;}
     .wro-emblem{order:1;}
     .hero-right{order:1;flex-direction:row;align-items:center;gap:0.5rem;}
-    #sync-status{font-size:9px;}
+    .sync-desktop{display:none;}
+    .sync-mobile{display:inline-block;margin-left:6px;font-size:9px;vertical-align:middle;}
   }
-  #sync-status{font-size:10px;color:var(--text3);white-space:nowrap;}
 
   /* ── DDAY ── */
   .dday-area{display:flex;gap:0.3rem;align-items:center;}
@@ -202,10 +204,10 @@
     <div class="wro-emblem">🏛️</div>
     <div class="wro-title">
       <div class="subtitle">WRO 2026 · RoboMission · 중등부</div>
-      <h1>Heritage Heroes Dashboard</h1>
+      <h1>Heritage Heroes Dashboard <span class="sync-badge sync-mobile">⏳ 연결 중...</span></h1>
     </div>
     <div class="hero-right">
-      <span id="sync-status">⏳ 연결 중...</span>
+      <span class="sync-badge sync-desktop">⏳ 연결 중...</span>
       <div class="dday-area" id="dday-area"></div>
     </div>
   </div>
@@ -349,9 +351,10 @@ function loadPinCoordsFromLocal() {
 function fallbackToLocal() { try { const s=localStorage.getItem('wro2026_state'); if(s) state={...state,...JSON.parse(s)}; } catch(e){} loadPinCoordsFromLocal(); render(); }
 function saveState() { if (firebaseReady) return; try { localStorage.setItem('wro2026_state',JSON.stringify(state)); } catch(e){} }
 function updateSyncStatus(status) {
-  const el=document.getElementById('sync-status'); if(!el) return;
+  const els=document.querySelectorAll('.sync-badge'); if(!els.length) return;
   const map={connected:{text:'🟢 실시간 연결됨',color:'var(--green)'},saved:{text:'✅ 저장됨',color:'var(--teal)'},error:{text:'🔴 연결 오류',color:'var(--coral)'},local:{text:'🟡 로컬 모드',color:'var(--amber)'}};
-  const s=map[status]||map.local; el.textContent=s.text; el.style.color=s.color;
+  const s=map[status]||map.local;
+  els.forEach(el=>{ el.textContent=s.text; el.style.color=s.color; });
 }
 function showFirebaseGuide() { updateSyncStatus('local'); fallbackToLocal(); }
 
