@@ -126,6 +126,23 @@
   .mission-name{font-size:12px;color:var(--text);}
   .mission-pts{font-size:10px;color:var(--teal);margin-top:1px;}
 
+  /* ── 3단계 상태 항목 (방문객·탑·유물) ── */
+  .mission-state-row{padding:0.5rem 0;border-bottom:1px solid rgba(100,120,255,0.06);}
+  .mission-state-row:last-child{border-bottom:none;}
+  .mission-state-name{font-size:12px;color:var(--text);display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;}
+  .mission-state-name.done{color:var(--text);}
+  .mission-state-pts{font-size:11px;font-weight:700;color:var(--teal);}
+  .mission-state-btns{display:flex;gap:0.3rem;}
+  .state-btn{flex:1;border:1.5px solid;border-radius:6px;padding:0.3rem 0.2rem;font-size:10px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .state-btn:hover{opacity:0.85;}
+
+  /* ── 개수 선택 항목 (자갈길 청소) ── */
+  .mission-count-row{padding:0.5rem 0;}
+  .count-chip-wrap{display:flex;flex-wrap:wrap;gap:0.25rem;}
+  .count-chip{width:26px;height:26px;border-radius:6px;border:1.5px solid var(--border2);background:var(--card);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;}
+  .count-chip:hover{border-color:var(--accent2);}
+  .count-chip.active{box-shadow:0 0 0 2px rgba(255,255,255,0.15) inset;}
+
   /* ── FORMS ── */
   .form-group{margin-bottom:0.8rem;}
   .form-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text3);margin-bottom:0.3rem;}
@@ -235,22 +252,48 @@
 </div>
 
 <script>
+// 미션 항목 타입:
+// 'state'  → 완전(full)/부분(partial)/없음(0) 3단계 — team.itemStates[itemId] = 'full'|'partial'|'none'
+// 'count'  → 개수 기반 — team.itemCounts[itemId] = 0~max
+// 'binary' → 단순 체크 — team.itemStates[itemId] = true/false
 const MISSIONS = [
-  { id:'m1', zone:'방문객 안내', color:'#6366f1', dotColor:'#6366f1',
-    tasks:[{id:'t1a',name:'방문객 1 — 색상 구역 완전 진입',pts:10},{id:'t1b',name:'방문객 2 — 색상 구역 완전 진입',pts:10},{id:'t1c',name:'방문객 3 — 색상 구역 완전 진입',pts:10},{id:'t1d',name:'방문객 4 — 색상 구역 완전 진입',pts:10}],
-    maxScore:40, partialTask:{id:'t1p',name:'방문객 일부 걸침 (개당 5점)',pts:5}},
-  { id:'m2', zone:'탑 재건', color:'#f59e0b', dotColor:'#f59e0b',
-    tasks:[{id:'t2a',name:'빨간색 탑 — 구역 완전 진입',pts:15},{id:'t2b',name:'빨간색 탑 — 일부 걸침',pts:10},{id:'t2c',name:'노란색 탑 받침대 — 구역 완전 진입',pts:25},{id:'t2d',name:'노란색 탑 받침대 — 일부 걸침',pts:15}],
-    maxScore:80, note:'빨간 탑 최대 30점 · 노란 탑 최대 50점'},
-  { id:'m3', zone:'유물 운반', color:'#14b8a6', dotColor:'#14b8a6',
-    tasks:[{id:'t3a',name:'유물 1 — 색상 전시 장소 완전 진입',pts:15},{id:'t3b',name:'유물 2 — 색상 전시 장소 완전 진입',pts:15},{id:'t3c',name:'유물 3 — 색상 전시 장소 완전 진입',pts:15},{id:'t3d',name:'유물 4 — 색상 전시 장소 완전 진입',pts:15}],
-    maxScore:60},
-  { id:'m4', zone:'자갈길 청소', color:'#22c55e', dotColor:'#22c55e',
-    tasks:[{id:'t4a',name:'먼지 1',pts:2},{id:'t4b',name:'먼지 2',pts:2},{id:'t4c',name:'먼지 3',pts:2},{id:'t4d',name:'먼지 4',pts:2},{id:'t4e',name:'먼지 5',pts:2},{id:'t4f',name:'먼지 6',pts:2},{id:'t4g',name:'먼지 7',pts:2},{id:'t4h',name:'먼지 8',pts:2},{id:'t4i',name:'먼지 9',pts:2},{id:'t4j',name:'먼지 10',pts:2}],
-    maxScore:20},
-  { id:'m5', zone:'보너스', color:'#f43f5e', dotColor:'#f43f5e',
-    tasks:[{id:'t5a',name:'차단막 1 — 이동/손상 없음',pts:10},{id:'t5b',name:'차단막 2 — 이동/손상 없음',pts:10},{id:'t5c',name:'앵무새 — 이동/손상 없음',pts:10}],
-    maxScore:30}
+  { id:'m1', zone:'방문객 안내', dotColor:'#6366f1', maxScore:40,
+    items:[
+      { id:'v-grn', type:'state', name:'초록 방문객', full:10, partial:5 },
+      { id:'v-red', type:'state', name:'빨강 방문객', full:10, partial:5 },
+      { id:'v-blk', type:'state', name:'검정 방문객', full:10, partial:5 },
+      { id:'v-blu', type:'state', name:'파랑 방문객', full:10, partial:5 },
+    ]
+  },
+  { id:'m2', zone:'탑 재건', dotColor:'#f59e0b', maxScore:80,
+    note:'빨간 탑 최대 30점 · 노란 탑 최대 50점',
+    items:[
+      { id:'t-red-1', type:'state', name:'빨간탑 1', full:15, partial:10 },
+      { id:'t-red-2', type:'state', name:'빨간탑 2', full:15, partial:10 },
+      { id:'t-yel-1', type:'state', name:'노란탑 1', full:25, partial:15 },
+      { id:'t-yel-2', type:'state', name:'노란탑 2', full:25, partial:15 },
+    ]
+  },
+  { id:'m3', zone:'유물 운반', dotColor:'#14b8a6', maxScore:60,
+    items:[
+      { id:'a-1', type:'state', name:'유물 1', full:15, partial:5 },
+      { id:'a-2', type:'state', name:'유물 2', full:15, partial:5 },
+      { id:'a-3', type:'state', name:'유물 3', full:15, partial:5 },
+      { id:'a-4', type:'state', name:'유물 4', full:15, partial:5 },
+    ]
+  },
+  { id:'m4', zone:'자갈길 청소', dotColor:'#22c55e', maxScore:20,
+    items:[
+      { id:'cobble-count', type:'count', name:'치운 먼지 개수', perUnit:2, max:10 },
+    ]
+  },
+  { id:'m5', zone:'보너스', dotColor:'#f43f5e', maxScore:30,
+    items:[
+      { id:'b-white', type:'binary', name:'흰 차단막 — 이동/손상 없음', pts:10 },
+      { id:'b-red',   type:'binary', name:'빨강 차단막 — 이동/손상 없음', pts:10 },
+      { id:'b-parrot',type:'binary', name:'앵무새 — 이동/손상 없음', pts:10 },
+    ]
+  }
 ];
 
 const MAX_SCORE = 230;
@@ -264,7 +307,8 @@ let state = {
         {name:'김민준', grade:'2학년', role:'드라이버', pledge:'열심히 준비했습니다. 최선을 다하겠습니다!'},
         {name:'이서연', grade:'2학년', role:'네비게이터', pledge:'팀을 위해 최선을 다해 지원하겠습니다!'}
       ],
-      completedTasks:['t1a','t1b','t3a','t4a','t4b','t5a','t5b','t5c'],
+      itemStates:{ 'v-grn':'full', 'v-red':'full', 'a-1':'full', 'b-white':true, 'b-red':true, 'b-parrot':true },
+      itemCounts:{ 'cobble-count': 4 },
       completedTime:'02:15', route:['방문객 안내','유물 운반','자갈길 청소','보너스']},
     { id:'team2', name:'로봇 고고학자', school:'서울중학교',
       memberList:[
@@ -272,14 +316,16 @@ let state = {
         {name:'최예린', grade:'3학년', role:'드라이버', pledge:'정확한 조작으로 미션을 완수하겠습니다!'},
         {name:'정도현', grade:'3학년', role:'설계자', pledge:'최적의 경로를 설계해 팀에 기여하겠습니다!'}
       ],
-      completedTasks:['t1a','t1b','t1c','t1d','t2a','t3a','t3b','t4a','t4b','t4c','t5a','t5c'],
+      itemStates:{ 'v-grn':'full','v-red':'full','v-blk':'full','v-blu':'full', 't-red-1':'full', 'a-1':'full','a-2':'full', 'b-white':true, 'b-parrot':true },
+      itemCounts:{ 'cobble-count': 6 },
       completedTime:'01:48', route:['탑 재건','방문객 안내','유물 운반','자갈길 청소']},
     { id:'team3', name:'문화재 수호단', school:'부산중학교',
       memberList:[
         {name:'윤하은', grade:'1학년', role:'코더', pledge:'첫 대회지만 포기하지 않겠습니다!'},
         {name:'강태양', grade:'1학년', role:'드라이버', pledge:'끝까지 완주하겠습니다!'}
       ],
-      completedTasks:['t1a','t2c','t5a'],
+      itemStates:{ 'v-grn':'full', 't-yel-1':'full', 'b-white':true },
+      itemCounts:{},
       completedTime:null, route:['유물 운반','방문객 안내']}
   ],
   selectedTeamId:'team1',
@@ -361,12 +407,54 @@ function updateSyncStatus(status) {
 function showFirebaseGuide() { updateSyncStatus('local'); fallbackToLocal(); }
 
 // ── Helpers ──
-function getTeamScore(team) { let s=0; MISSIONS.forEach(m=>m.tasks.forEach(t=>{ if(team.completedTasks.includes(t.id)) s+=t.pts; })); return s; }
-function getTeamMissionCount(team) { return MISSIONS.filter(m=>m.tasks.some(t=>team.completedTasks.includes(t.id))).length; }
-function getTeamProgress(team) { const total=MISSIONS.reduce((a,m)=>a+m.tasks.length,0); return Math.round(team.completedTasks.length/total*100); }
+function getItemScore(item, team) {
+  if (item.type === 'state') {
+    var s = (team.itemStates && team.itemStates[item.id]) || 'none';
+    if (s === 'full') return item.full;
+    if (s === 'partial') return item.partial;
+    return 0;
+  }
+  if (item.type === 'count') {
+    var c = (team.itemCounts && team.itemCounts[item.id]) || 0;
+    return c * item.perUnit;
+  }
+  if (item.type === 'binary') {
+    var on = team.itemStates && team.itemStates[item.id];
+    return on ? item.pts : 0;
+  }
+  return 0;
+}
+function getItemMax(item) {
+  if (item.type === 'state') return item.full;
+  if (item.type === 'count') return item.max * item.perUnit;
+  if (item.type === 'binary') return item.pts;
+  return 0;
+}
+function getZoneScore(team, mid) {
+  var m = MISSIONS.find(function(x){ return x.id===mid; });
+  if (!m) return 0;
+  return m.items.reduce(function(sum, item){ return sum + getItemScore(item, team); }, 0);
+}
+function getTeamScore(team) {
+  return MISSIONS.reduce(function(sum, m){ return sum + getZoneScore(team, m.id); }, 0);
+}
+function getTeamMissionCount(team) {
+  return MISSIONS.filter(function(m){ return getZoneScore(team, m.id) > 0; }).length;
+}
+function getTeamProgress(team) {
+  var totalItems = MISSIONS.reduce(function(a,m){ return a + m.items.length; }, 0);
+  var doneItems = 0;
+  MISSIONS.forEach(function(m){
+    m.items.forEach(function(item){
+      if (item.type === 'state' && team.itemStates && team.itemStates[item.id] === 'full') doneItems++;
+      else if (item.type === 'binary' && team.itemStates && team.itemStates[item.id]) doneItems++;
+      else if (item.type === 'count' && team.itemCounts && team.itemCounts[item.id] >= item.max) doneItems++;
+    });
+  });
+  return Math.round(doneItems / totalItems * 100);
+}
 function getRankedTeams() { return [...state.teams].sort((a,b)=>{ const sa=getTeamScore(a),sb=getTeamScore(b); if(sb!==sa) return sb-sa; if(a.completedTime&&b.completedTime) return a.completedTime.localeCompare(b.completedTime); return a.completedTime?-1:1; }); }
 function selectedTeam() { return state.teams.find(t=>t.id===state.selectedTeamId)||state.teams[0]; }
-function getZoneScore(team,mid) { const m=MISSIONS.find(x=>x.id===mid); if(!m) return 0; return m.tasks.filter(t=>team.completedTasks.includes(t.id)).reduce((a,t)=>a+t.pts,0); }
 function rankClass(i) { return ['rank-1','rank-2','rank-3'][i]||'rank-n'; }
 // 구버전 호환: memberList 없으면 members 배열에서 변환
 function getMemberList(team) {
@@ -415,7 +503,7 @@ function render() {
 // ── Dashboard ──
 function renderDashboard() {
   const ranked = getRankedTeams();
-  const totalTasks = MISSIONS.reduce((a,m)=>a+m.tasks.length,0);
+  const totalTasks = MISSIONS.reduce((a,m)=>a+m.items.length,0);
   return `
   <div class="banner">
     <div class="banner-icon">🏛️</div>
@@ -512,8 +600,8 @@ function renderMissions() {
       <span class="pill pill-green">${getTeamScore(team)}점 / ${MAX_SCORE}점</span>
     </div>
     <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.65rem">
-      <span class="pill pill-blue">${team.completedTasks.length}개 완료</span>
-      <span class="pill pill-amber">${getTeamProgress(team)}% 진행</span>
+      <span class="pill pill-blue">${getTeamMissionCount(team)}/${MISSIONS.length}구역 진행</span>
+      <span class="pill pill-amber">${getTeamProgress(team)}% 완료</span>
     </div>
     <div style="height:9px;background:rgba(100,120,255,0.1);border-radius:5px;overflow:hidden">
       <div style="height:100%;width:${getTeamProgress(team)}%;background:linear-gradient(90deg,var(--accent),var(--teal));transition:width .4s"></div>
@@ -525,14 +613,7 @@ function renderMissions() {
       return `<div class="zone-card">
         <div class="zone-header"><div class="zone-dot" style="background:${m.dotColor}"></div><div class="zone-name">${m.zone}</div><div class="zone-max">${zs}/${m.maxScore}점</div></div>
         <div style="height:4px;background:rgba(100,120,255,0.1);border-radius:2px;margin-bottom:0.65rem;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.round(zs/m.maxScore*100))}%;background:${m.dotColor};opacity:.7"></div></div>
-        ${m.tasks.map(t=>{ const done=team.completedTasks.includes(t.id); return `
-        <div class="mission-item" onclick="toggleTask('${team.id}','${t.id}')">
-          <div class="mission-check${done?' done':''}">${done?'✓':''}</div>
-          <div class="mission-text">
-            <div class="mission-name" style="${done?'color:var(--text3);text-decoration:line-through':''}">${t.name}</div>
-            <div class="mission-pts">+${t.pts}점</div>
-          </div>
-        </div>`; }).join('')}
+        ${m.items.map(item=>renderMissionItem(team, item, m.dotColor)).join('')}
         ${m.note?`<div style="font-size:11px;color:var(--text3);margin-top:0.4rem;padding:0.35rem 0.5rem;background:rgba(100,120,255,0.05);border-radius:5px">ℹ️ ${m.note}</div>`:''}
       </div>`;
     }).join('')}
@@ -545,6 +626,50 @@ function renderMissions() {
       <span style="font-size:11px;color:var(--text3)">동점 시 기록으로 순위 결정</span>
     </div>
   </div>`;
+}
+
+function renderMissionItem(team, item, dotColor) {
+  if (item.type === 'state') {
+    var cur = (team.itemStates && team.itemStates[item.id]) || 'none';
+    var pts = cur==='full' ? item.full : (cur==='partial' ? item.partial : 0);
+    var done = cur === 'full';
+    return '<div class="mission-state-row">'
+      +'<div class="mission-state-name'+(done?' done':'')+'">'+item.name+'<span class="mission-state-pts">'+(pts>0?'+'+pts+'점':'0점')+'</span></div>'
+      +'<div class="mission-state-btns">'
+        +stateBtn(team.id, item.id, 'full',    '완전 ('+item.full+'점)',    cur, dotColor)
+        +stateBtn(team.id, item.id, 'partial', '부분 ('+item.partial+'점)', cur, dotColor)
+        +stateBtn(team.id, item.id, 'none',    '없음 (0점)',                cur, dotColor)
+      +'</div></div>';
+  }
+  if (item.type === 'count') {
+    var n = (team.itemCounts && team.itemCounts[item.id]) || 0;
+    var opts = '';
+    for (var i=0; i<=item.max; i++) {
+      opts += '<button onclick="setItemCount(\''+team.id+'\',\''+item.id+'\','+i+')" '
+        +'class="count-chip'+(n===i?' active':'')+'" style="'+(n===i?('background:'+dotColor+';border-color:'+dotColor+';color:#fff;'):'')+'">'+i+'</button>';
+    }
+    return '<div class="mission-count-row">'
+      +'<div class="mission-state-name">'+item.name+'<span class="mission-state-pts">'+(n*item.perUnit)+'점 / '+(item.max*item.perUnit)+'점</span></div>'
+      +'<div class="count-chip-wrap">'+opts+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:3px">먼지 1개당 '+item.perUnit+'점</div>'
+      +'</div>';
+  }
+  // binary
+  var on = team.itemStates && team.itemStates[item.id];
+  return '<div class="mission-item" onclick="toggleBinaryItem(\''+team.id+'\',\''+item.id+'\')">'
+    +'<div class="mission-check'+(on?' done':'')+'">'+(on?'✓':'')+'</div>'
+    +'<div class="mission-text">'
+      +'<div class="mission-name" style="'+(on?'color:var(--text3);text-decoration:line-through':'')+'">'+item.name+'</div>'
+      +'<div class="mission-pts">+'+item.pts+'점</div>'
+    +'</div></div>';
+}
+function stateBtn(teamId, itemId, val, label, cur, dotColor) {
+  var active = cur === val;
+  var bg = active ? dotColor : 'transparent';
+  var fg = active ? '#fff' : dotColor;
+  var bd = dotColor;
+  return '<button onclick="setItemState(\''+teamId+'\',\''+itemId+'\',\''+val+'\')" '
+    +'class="state-btn" style="background:'+bg+';color:'+fg+';border-color:'+bd+'">'+label+'</button>';
 }
 
 // ── Teams ──
@@ -840,10 +965,22 @@ function renderScores() {
 
 // ── Actions ──
 function selectTeam(id) { state.selectedTeamId=id; saveState(); render(); }
-function toggleTask(teamId,taskId) {
+function setItemState(teamId, itemId, val) {
   const team=state.teams.find(t=>t.id===teamId); if(!team) return;
-  const idx=team.completedTasks.indexOf(taskId);
-  if(idx>=0) team.completedTasks.splice(idx,1); else team.completedTasks.push(taskId);
+  if (!team.itemStates) team.itemStates = {};
+  team.itemStates[itemId] = val;
+  if(firebaseReady) saveTeamToFirebase(team); else { saveState(); render(); }
+}
+function setItemCount(teamId, itemId, n) {
+  const team=state.teams.find(t=>t.id===teamId); if(!team) return;
+  if (!team.itemCounts) team.itemCounts = {};
+  team.itemCounts[itemId] = n;
+  if(firebaseReady) saveTeamToFirebase(team); else { saveState(); render(); }
+}
+function toggleBinaryItem(teamId, itemId) {
+  const team=state.teams.find(t=>t.id===teamId); if(!team) return;
+  if (!team.itemStates) team.itemStates = {};
+  team.itemStates[itemId] = !team.itemStates[itemId];
   if(firebaseReady) saveTeamToFirebase(team); else { saveState(); render(); }
 }
 function updateTime(teamId,val) {
@@ -989,7 +1126,7 @@ function saveTeam() {
     team=state.teams.find(t=>t.id===id);
     if(team) Object.assign(team,{name,school,memberList});
   } else {
-    team={id:'team'+Date.now(),name,school,memberList,completedTasks:[],completedTime:null,route:[]};
+    team={id:'team'+Date.now(),name,school,memberList,itemStates:{},itemCounts:{},completedTime:null,route:[]};
     state.teams.push(team);
   }
   if(firebaseReady) saveTeamToFirebase(team); else { saveState(); render(); }
