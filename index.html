@@ -284,7 +284,7 @@ const firebaseConfig = {
   appId:"1:801953751492:web:a68d7ff3f2430f8fa6c491"
 };
 
-let db=null, teamsRef=null, firebaseReady=false;
+let db=null, teamsRef=null, pinCoordsRef=null, firebaseReady=false;
 
 function initFirebase() {
   try {
@@ -292,12 +292,20 @@ function initFirebase() {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.database();
     teamsRef = db.ref('wro2026/teams');
+    pinCoordsRef = db.ref('wro2026/pinCoords');
     teamsRef.on('value', snap => {
       const data = snap.val();
       if (data) state.teams = Object.values(data);
       else pushInitialData();
       render(); updateSyncStatus('connected');
     }, err => { updateSyncStatus('error'); fallbackToLocal(); });
+    pinCoordsRef.on('value', snap => {
+      const data = snap.val();
+      if (data) {
+        PIN_DEFS.forEach(p => { if (data[p.id]) { p.x = data[p.id].x; p.y = data[p.id].y; } });
+        render();
+      }
+    });
     firebaseReady = true; return true;
   } catch(e) { fallbackToLocal(); return false; }
 }
@@ -307,7 +315,29 @@ function saveTeamToFirebase(team) {
   teamsRef.child(team.id).set(team).then(()=>updateSyncStatus('saved')).catch(()=>updateSyncStatus('error'));
 }
 function deleteTeamFromFirebase(id) { if (firebaseReady&&teamsRef) teamsRef.child(id).remove(); }
-function fallbackToLocal() { try { const s=localStorage.getItem('wro2026_state'); if(s) state={...state,...JSON.parse(s)}; } catch(e){} render(); }
+function savePinCoordsToFirebase() {
+  if (!firebaseReady || !pinCoordsRef) { savePinCoordsToLocal(); return; }
+  var payload = {};
+  PIN_DEFS.forEach(function(p){ payload[p.id] = { x: p.x, y: p.y }; });
+  pinCoordsRef.set(payload).then(()=>updateSyncStatus('saved')).catch(()=>updateSyncStatus('error'));
+}
+function savePinCoordsToLocal() {
+  try {
+    var payload = {};
+    PIN_DEFS.forEach(function(p){ payload[p.id] = { x: p.x, y: p.y }; });
+    localStorage.setItem('wro2026_pinCoords', JSON.stringify(payload));
+  } catch(e) {}
+}
+function loadPinCoordsFromLocal() {
+  try {
+    var s = localStorage.getItem('wro2026_pinCoords');
+    if (s) {
+      var data = JSON.parse(s);
+      PIN_DEFS.forEach(function(p){ if (data[p.id]) { p.x = data[p.id].x; p.y = data[p.id].y; } });
+    }
+  } catch(e) {}
+}
+function fallbackToLocal() { try { const s=localStorage.getItem('wro2026_state'); if(s) state={...state,...JSON.parse(s)}; } catch(e){} loadPinCoordsFromLocal(); render(); }
 function saveState() { if (firebaseReady) return; try { localStorage.setItem('wro2026_state',JSON.stringify(state)); } catch(e){} }
 function updateSyncStatus(status) {
   const el=document.getElementById('sync-status'); if(!el) return;
@@ -363,7 +393,7 @@ function render() {
     case 'dashboard': mc.innerHTML=renderDashboard(); break;
     case 'missions':  mc.innerHTML=renderMissions(); break;
     case 'teams':     mc.innerHTML=renderTeams(); break;
-    case 'route':     mc.innerHTML=renderRoute(); if(EDIT_MODE){ setTimeout(function(){ attachPinDrag(); updateCoordOutput(); }, 50); } break;
+    case 'route':     mc.innerHTML=renderRoute(); if(EDIT_MODE){ setTimeout(attachPinDrag, 50); } break;
     case 'scores':    mc.innerHTML=renderScores(); break;
   }
 }
@@ -616,7 +646,7 @@ function attachPinDrag() {
         document.removeEventListener('mouseup', end);
         document.removeEventListener('touchmove', move);
         document.removeEventListener('touchend', end);
-        updateCoordOutput();
+        if (firebaseReady) savePinCoordsToFirebase(); else savePinCoordsToLocal();
       }
       document.addEventListener('mousemove', move);
       document.addEventListener('mouseup', end);
@@ -626,23 +656,6 @@ function attachPinDrag() {
     el.addEventListener('mousedown', startDrag);
     el.addEventListener('touchstart', startDrag, {passive:false});
   });
-}
-
-function updateCoordOutput() {
-  var out = document.getElementById('coord-output');
-  if (!out) return;
-  var txt = PIN_DEFS.map(function(p){
-    return "  { id:'"+p.id+"', zone:'"+p.zone+"', label:'"+p.label+"', x:"+p.x+", y:"+p.y+", color:'"+p.color+"', group:'"+p.group+"' },";
-  }).join('\n');
-  out.value = 'const PIN_DEFS = [\n' + txt + '\n];';
-}
-
-function copyCoords() {
-  var out = document.getElementById('coord-output');
-  if (!out) return;
-  out.select();
-  try { document.execCommand('copy'); alert('좌표가 복사되었습니다!'); }
-  catch(e) { alert('복사 실패 — 텍스트를 직접 선택해 복사하세요.'); }
 }
 
 function renderRouteSVG(team) {
@@ -746,7 +759,7 @@ function renderRoute() {
     +'<div class="card-header"><div class="card-title">🗺️ '+team.name+' — 경로 맵</div>'
     +'<button class="btn btn-sm '+(EDIT_MODE?'btn-primary':'btn-ghost')+'" onclick="toggleEditMode()">'+(EDIT_MODE?'✓ 편집 완료':'✏️ 핀 위치 편집')+'</button>'
     +'</div>'
-    +(EDIT_MODE ? '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius-sm);padding:0.6rem 0.8rem;margin-bottom:0.75rem;font-size:11px;color:var(--gold2)">✏️ 편집 모드: 핀을 드래그해서 정확한 위치로 옮기세요. 완료 후 아래 좌표를 복사해 보관하면 다음에도 유지됩니다.</div>' : '')
+    +(EDIT_MODE ? '<div style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius-sm);padding:0.6rem 0.8rem;margin-bottom:0.75rem;font-size:11px;color:var(--gold2)">✏️ 편집 모드: 핀을 드래그하면 위치가 자동으로 저장되며, 모든 사람의 화면에 즉시 반영됩니다.</div>' : '')
     // 맵 이미지 + 오버레이
     +'<div id="map-wrap" style="position:relative;width:100%;border-radius:var(--radius-sm);overflow:hidden;background:#111827;border:1px solid var(--border);margin-bottom:0.875rem">'
     +'<img src="data:image/jpeg;base64,'+MAP_B64+'" style="width:100%;display:block;opacity:0.9" alt="WRO 2026 Game Mat" draggable="false">'
@@ -755,9 +768,6 @@ function renderRoute() {
     +'</svg>'
     +'<div style="position:absolute;top:0;left:0;width:100%;height:100%">'+renderZonePins(team)+'</div>'
     +'</div>'
-    +(EDIT_MODE ? '<div style="margin-bottom:0.875rem"><div style="font-size:11px;color:var(--text3);margin-bottom:0.4rem">📋 조정된 좌표 (복사해서 보관)</div>'
-      +'<textarea id="coord-output" readonly style="width:100%;height:90px;background:var(--card2);border:1px solid var(--border2);border-radius:6px;padding:0.5rem;color:var(--text2);font-size:10px;font-family:monospace;resize:vertical"></textarea>'
-      +'<button class="btn btn-ghost btn-sm" onclick="copyCoords()" style="margin-top:0.4rem">📋 좌표 복사</button></div>' : '')
     // 수행 순서
     +'<div style="font-size:11px;color:var(--text3);margin-bottom:0.5rem">📍 수행 순서</div>'
     +'<div class="route-box" style="margin-bottom:0.875rem">'+renderRouteSteps(team)+'</div>'
