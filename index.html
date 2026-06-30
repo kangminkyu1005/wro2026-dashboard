@@ -29,14 +29,16 @@
   .sync-badge{font-size:10px;color:var(--text3);white-space:nowrap;}
   .sync-mobile{display:none;}
   @media(max-width:480px){
-    .hero-inner{justify-content:space-between;}
-    .wro-title{order:2;flex-basis:100%;min-width:0;margin-top:0.4rem;}
-    .wro-title h1{white-space:normal;font-size:15px;}
-    .wro-title .subtitle{white-space:normal;}
+    .hero-inner{align-items:center;}
+    /* wro-title의 박스를 없애고, 자식(subtitle, h1)을 hero-inner의 직계 flex 아이템처럼 동작시킴 */
+    .wro-title{display:contents;}
     .wro-emblem{order:1;}
-    .hero-right{order:1;flex-direction:row;align-items:center;gap:0.5rem;}
+    .wro-title .subtitle{order:2;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;}
+    .hero-right{order:3;flex-direction:row;align-items:center;gap:0.5rem;}
     .sync-desktop{display:none;}
-    .sync-mobile{display:inline-block;margin-left:6px;font-size:9px;vertical-align:middle;}
+    .wro-title h1{order:4;flex-basis:100%;width:100%;display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem;margin-top:0.4rem;white-space:normal;}
+    .title-text{font-size:15px;flex:1 1 auto;min-width:0;}
+    .sync-mobile{display:inline-block;flex-shrink:0;font-size:9px;}
   }
 
   /* ── DDAY ── */
@@ -204,7 +206,7 @@
     <div class="wro-emblem">🏛️</div>
     <div class="wro-title">
       <div class="subtitle">WRO 2026 · RoboMission · 중등부</div>
-      <h1>Heritage Heroes Dashboard <span class="sync-badge sync-mobile">⏳ 연결 중...</span></h1>
+      <h1><span class="title-text">Heritage Heroes Dashboard</span><span class="sync-badge sync-mobile">⏳ 연결 중...</span></h1>
     </div>
     <div class="hero-right">
       <span class="sync-badge sync-desktop">⏳ 연결 중...</span>
